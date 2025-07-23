@@ -1,4 +1,5 @@
 local kvpname = GetCurrentServerEndpoint()..'_inshells'
+
 CreateBlips = function()
 	for k,v in pairs(config.motels) do
 		local blip = AddBlipForCoord(v.rentcoord.x,v.rentcoord.y,v.rentcoord.z)
@@ -7,7 +8,7 @@ CreateBlips = function()
 		SetBlipAsShortRange(blip,true)
 		SetBlipScale(blip,0.6)
 		BeginTextCommandSetBlipName("STRING")
-		AddTextComponentString(v.label)
+		AddTextComponentString(v.label) 
 		EndTextCommandSetBlipName(blip)
 	end
 end
@@ -16,21 +17,21 @@ RegisterNetEvent('renzu_motels:invoice')
 AddEventHandler('renzu_motels:invoice', function(data)
 	local motels = GlobalState.Motels
     local buy = lib.alertDialog({
-		header = 'Invoice',
-		content = '![motel](nui://renzu_motels/data/image/'..data.motel..'.png) \n ## INFO \n **Description:** '..data.description..'  \n  **Amount:** $ '..data.amount..'  \n **Payment method:** '..data.payment,
+		header = 'Fatura',
+		content = '![motel](nui://renzu_motels/data/image/'..data.motel..'.png) \n ## INFORMAÇÃO \n **Descrição:** '..data.description..'  \n  **Valor:** $ '..data.amount..'  \n **Método de Pagamento:** '..data.payment,
 		centered = true,
 		labels = {
-			cancel = 'close',
-			confirm = 'Pay'
+			cancel = 'fechar',
+			confirm = 'Pagar'
 		},
 		cancel = true
 	})
 	if buy ~= 'cancel' then
 		local success = lib.callback.await('renzu_motels:payinvoice',false,data)
 		if success then
-			Notify('You Successfully Pay the Invoice','success')
+			Notify('Pagaste a fatura com sucesso','success')
 		else
-			Notify('Fail to Pay the Invoice','error')
+			Notify('Falha ao pagar a fatura','error')
 		end
 	end
 end)
@@ -42,15 +43,15 @@ DoesPlayerHaveAccess = function(data)
     return false
 end
 
-DoesPlayerHaveKey = function(data,room)
-	local items = GetInventoryItems('keys')
-	if not items then return false end
-	for k,v in pairs(items) do
-		if v.metadata?.type == data.motel and v.metadata?.serial == data.index then
-			return v.metadata?.owner and room?.players[v.metadata?.owner] or false
-		end
-	end
-	return false
+DoesPlayerHaveKey = function(data, room)
+    local items = GetInventoryItems('keys')
+    if not items then return false end
+    for k, v in pairs(items) do
+        if v.metadata?.type == data.motel and v.metadata?.serial == data.index then
+            return v.metadata?.owner and room?.players[v.metadata?.owner] or false
+        end
+    end
+    return false
 end
 
 GetPlayerKeys = function(data,room)
@@ -76,7 +77,7 @@ end
 
 RegisterNetEvent('renzu_motels:Door', function(data)
 	if not data.Mlo then return end
-	local doorindex = data.doorindex + (joaat(data.motel))
+	local doorindex = data.index + (joaat(data.motel))
 	DoorSystemSetDoorState(doorindex, DoorSystemGetDoorState(doorindex) == 0 and 1 or 0, false, false)
 end)
 
@@ -84,23 +85,21 @@ Door = function(data)
     local dist = #(data.coord - GetEntityCoords(cache.ped)) < 2
     local motel = GlobalState.Motels[data.motel]
 	local moteldoor = motel and motel.rooms[data.index]
-    if moteldoor and DoesPlayerHaveAccess(motel.rooms[data.index].players)
-		or moteldoor and DoesPlayerHaveKey(data,moteldoor) or IsOwnerOrEmployee(data.motel) then
+    if (moteldoor and (DoesPlayerHaveAccess(moteldoor.players) or DoesPlayerHaveKey(data, moteldoor))) or IsOwnerOrEmployee(data.motel) then
 		lib.RequestAnimDict('mp_doorbell')
 		TaskPlayAnim(PlayerPedId(), "mp_doorbell", "open_door", 1.0, 1.0, 1000, 1, 1, 0, 0, 0)
         TriggerServerEvent('renzu_motels:Door', {
             motel = data.motel,
             index = data.index,
-			doorindex = data.doorindex,
             coord = data.coord,
 			Mlo = data.Mlo,
         })
 		local text
 		if data.Mlo then
 			local doorindex = data.index + (joaat(data.motel))
-			text = DoorSystemGetDoorState(doorindex) == 0 and 'You Locked the Motel Door' or 'You Unlocked the Motel Door'
+			text = DoorSystemGetDoorState(doorindex) == 0 and 'Trancaste a porta do motel' or 'Destrancaste a porta do motel'
 		else
-			text = not moteldoor?.lock and 'You Locked the Motel Door' or 'You Unlocked the Motel Door'
+			text = not moteldoor?.lock and 'Trancaste a porta do motel' or 'Destrancaste a porta do motel'
 		end
 		Wait(1000)
 		--PlaySoundFromEntity(-1, "Hood_Open", cache.ped , 'Lowrider_Super_Mod_Garage_Sounds', 0, 0)
@@ -114,7 +113,7 @@ Door = function(data)
 		})
 		Notify(text, 'inform')
 	else
-		Notify('you dont have access', 'error')
+		Notify('Não tens acesso', 'error')
     end
 end
 
@@ -127,7 +126,7 @@ end
 
 RoomFunction = function(data,identifier)
 	if isRentExpired(data) then
-		return Notify('Your Rent is Due.  \n  Please Pay to Access')
+		return Notify('A tua renda está em atraso.  \n  Por favor paga para teres acesso')
 	end
 	if data.type == 'door' then
 		return Door(data)
@@ -148,7 +147,7 @@ LockPick = function(data)
 		repeat
 		local lockpick = lib.progressBar({
 			duration = 10000,
-			label = 'Breaking in..',
+			label = 'A arrombar...',
 			useWhileDead = false,
 			canCancel = true,
 			anim = {
@@ -167,12 +166,11 @@ LockPick = function(data)
 		TriggerServerEvent('renzu_motels:Door', {
             motel = data.motel,
             index = data.index,
-			doorindex = data.doorindex,
             coord = data.coord,
 			Mlo = data.Mlo
         })
 		local doorindex = data.index + (joaat(data.motel))
-		Notify(DoorSystemGetDoorState(doorindex) == 0 and 'You Locked the Motel Door' or 'You Unlocked the Motel Door', 'inform')
+		Notify(DoorSystemGetDoorState(doorindex) == 0 and 'Trancaste a porta do motel' or 'Destrancaste a porta do motel', 'inform')
 	end
 end
 
@@ -189,12 +187,13 @@ MyRoomMenu = function(data)
 
 	local options = {
 		{
-			title = 'My Room ['..data.index..'] - Pay a rent',
-			description = 'Pay your rent in due or advanced to Door '..data.index..' \n Rent Duration: '..data.duration..' \n '..data.rental_period..' Rate: $ '..rate,
+			title = 'O Meu Quarto ['..data.index..'] - Pagar renda',
+			description = 'Paga a tua renda (em atraso ou adiantado) para a Porta '..data.index..' \n Duração da Renda: '..data.duration..' \n Preço: $ '..rate,
+			--description = 'Paga a tua renda (em atraso ou adiantado) para a Porta '..data.index..' \n Duração da Renda: '..data.duration..' \n '..data.rental_period..' Preço: $ '..rate,
 			icon = 'money-bill-wave-alt',
 			onSelect = function()
-				local input = lib.inputDialog('Pay or Deposit to motel', {
-					{type = 'number', label = 'Amount to Deposit', description = '$ '..rate..' per '..data.rental_period..'  \n  Payment Method: '..data.payment, icon = 'money', default = rate},
+				local input = lib.inputDialog('Pagar ou Depositar no motel', {
+					{type = 'number', label = 'Valor a Depositar', description = '$ '..rate..' por '..data.rental_period..'  \n  Método de Pagamento: '..data.payment, icon = 'money', default = rate},
 				})
 				if not input then return end
 				local success = lib.callback.await('renzu_motels:payrent',false,{
@@ -206,16 +205,16 @@ MyRoomMenu = function(data)
 					rental_period = data.rental_period
 				})
 				if success then
-					Notify('Successfully pay a rent', 'success')
+					Notify('Renda paga com sucesso', 'success')
 				else
-					Notify('Fail to pay a rent', 'error')
+					Notify('Falha ao pagar a renda', 'error')
 				end
 			end,
 			arrow = true,
 		},
 		{
-			title = 'Generate Key Item',
-			description = 'Request a Door Key',
+			title = 'Criar Chave',
+			description = 'Solicita uma chave da porta',
 			icon = 'key',
 			onSelect = function()
 				local success = lib.callback.await('renzu_motels:motelkey',false,{
@@ -223,38 +222,38 @@ MyRoomMenu = function(data)
 					motel = data.motel,
 				})
 				if success then
-					Notify('Successfully requested a sharable motel key', 'success')
+					Notify('Solicitaste com sucesso uma chave partilhável do motel', 'success')
 				else
-					Notify('Fail to Generate Key', 'error')
+					Notify('Falha ao criar chave', 'error')
 				end
 			end,
 			arrow = true,
 		},
 		{
-			title = 'End Rent',
-			description = 'End your rental period',
+			title = 'Terminar Renda',
+			description = 'Termina o teu período de arrendamento',
 			icon = 'ban',
 			onSelect = function()
 				if isRentExpired(data) then
-					Notify('Failed to End rent to room '..data.index..'  \n  Reason: your have a Balance Debt to pay','error')
+					Notify('Falha ao terminar a renda do quarto '..data.index..'  \n  Motivo: tens dívidas por pagar','error')
 					return
 				end
 				local End = lib.alertDialog({
-					header = '## Warning',
-					content = ' You will no longer have access to the door and to your safes.',
+					header = '## Aviso',
+					content = ' Deixarás de ter acesso à porta e aos teus cofres.',
 					centered = true,
 					labels = {
-						cancel = 'close',
-						confirm = 'End',
+						cancel = 'fechar',
+						confirm = 'Terminar',
 					},
 					cancel = true
 				})
 				if End == 'cancel' then return end
 				local success = lib.callback.await('renzu_motels:removeoccupant',false,data,data.index,PlayerData.identifier)
 				if success then
-					Notify('Successfully End Your Rent to room '..data.index,'success')
+					Notify('Terminaste com sucesso a tua renda do quarto '..data.index,'success')
 				else
-					Notify('Failed to End rent to room '..data.index,'error')
+					Notify('Falha ao terminar a renda do quarto '..data.index,'error')
 				end
 			end,
 			arrow = true,
@@ -263,7 +262,7 @@ MyRoomMenu = function(data)
 	lib.registerContext({
         id = 'myroom',
 		menu = 'roomlist',
-        title = 'My Motel Room Option',
+        title = 'Opções do Meu Quarto de Motel',
         options = options
     })
 	lib.showContext('myroom')
@@ -288,12 +287,12 @@ RoomList = function(data)
 		local occupants = CountOccupants(motels[data.motel].rooms[doorindex].players)
 		if occupants < data.maxoccupants and not duration then
 			table.insert(options,{
-				title = 'Rent Motel room #'..doorindex,
-				description = 'Choose room #'..doorindex..' \n Occupants: '..occupants..'/'..data.maxoccupants,
+				title = 'Alugar Quarto de Motel #'..doorindex,
+				description = 'Escolhe o quarto #'..doorindex..' \n Ocupantes: '..occupants..'/'..data.maxoccupants,
 				icon = 'door-closed',
 				onSelect = function()
-					local input = lib.inputDialog('Rent Duration', {
-						{type = 'number', label = 'Select a Duration in '..data.rental_period..'s', description = '$ '..rate..' per '..data.rental_period..'   \n   Payment Method: '..data.payment, icon = 'clock', default = 1},
+					local input = lib.inputDialog('Duração do Aluguer', {
+						{type = 'number', label = 'Seleciona uma duração em '..data.rental_period..'s', description = '$ '..rate..' por '..data.rental_period..'   \n   Método de Pagamento: '..data.payment, icon = 'clock', default = 1},
 					})
 					if not input then return end
 					local success = lib.callback.await('renzu_motels:rentaroom',false,{
@@ -306,19 +305,19 @@ RoomList = function(data)
 						uniquestash = data.uniquestash
 					})
 					if success then
-						Notify('Successfully rent a room', 'success')
+						Notify('Alugaste o quarto com sucesso', 'success')
 					else
-						Notify('Fail to Rent a Room', 'error')
+						Notify('Falha ao alugar o quarto', 'error')
 					end
 				end,
 				arrow = true,
 			})
 		elseif duration then
 			local hour = math.floor((duration - time) / 3600)
-			local duration_left = hour .. ' Hours : '..math.floor(((duration - time) / 60) - (60 * hour))..' Minutes'
+			local duration_left = hour .. ' Horas : '..math.floor(((duration - time) / 60) - (60 * hour))..' Minutos'
 			table.insert(options,{
-				title = 'My Room Door #'..doorindex..' Options',
-				description = 'Pay your rent or request a motel key',
+				title = 'Porta do Meu Quarto #'..doorindex..' Opções',
+				description = 'Paga a tua renda ou pede uma chave do motel',
 				icon = 'cog',
 				onSelect = function()
 					return MyRoomMenu({
@@ -337,7 +336,7 @@ RoomList = function(data)
     lib.registerContext({
         id = 'roomlist',
 		menu = 'rentmenu',
-        title = 'Choose a Room',
+        title = 'Escolhe um Quarto',
         options = options
     })
 	lib.showContext('roomlist')
@@ -354,8 +353,9 @@ MotelRentalMenu = function(data)
 	local options = {}
 	if not data.manual then
 		table.insert(options,{
-			title = 'Rent a New Motel room',
-			description = '![rent](nui://renzu_motels/data/image/'..data.motel..'.png) \n Choose a room to rent \n '..data.rental_period..' Rate: $'..rate,
+			title = 'Aluga um Quarto',
+			--description = '![aluguer](nui://renzu_motels/data/image/'..data.motel..'.png) \n Escolhe um quarto para alugar \n '..data.rental_period..' Preço/dia: $'..rate,
+			description = '![aluguer](nui://renzu_motels/data/image/'..data.motel..'.png) \n Escolhe um quarto para alugar \n Preço/dia: $'..rate,
 			icon = 'hotel',
 			onSelect = function()
 				return RoomList(data)
@@ -364,21 +364,22 @@ MotelRentalMenu = function(data)
 		})
 	end
 	if not motels[data.motel].owned and config.business or IsOwnerOrEmployee(data.motel) and config.business then
-		local title = not motels[data.motel].owned and 'Buy Motel Business' or 'Motel Management'
-		local description = not motels[data.motel].owned and 'Cost: '..data.businessprice or 'Manage Employees , Occupants and finance.'
-		table.insert(options,{
-			title = title,
-			description = description,
-			icon = 'hotel',
-			onSelect = function()
-				return MotelOwner(data)
-			end,
-			arrow = true,
-		})
-	end
+	local title = not motels[data.motel].owned and 'Comprar Negócio do Motel' or 'Gestão do Motel'
+	local description = not motels[data.motel].owned and 'Custo: '..data.businessprice or 'Gerir Funcionários, Hóspedes e Finanças.'
+	table.insert(options,{
+		title = title,
+		description = description,
+		icon = 'hotel',
+		onSelect = function()
+			return MotelOwner(data)
+		end,
+		arrow = true,
+	})
+end
+
 
 	if #options == 0 then
-		Notify('This Motels Manually Accept Occupants  \n  Contact the Owner')
+		Notify('Este motel aceita ocupantes manualmente  \n  Contacta o proprietário')
 		Wait(1500)
 		return SendMessageApi(data.motel)
 	end
@@ -393,20 +394,20 @@ end
 
 SendMessageApi = function(motel)
 	local message = lib.alertDialog({
-		header = 'Do you want to Message the Owner?',
-		content = '## Message Motel Owner',
+		header = 'Queres enviar uma mensagem ao proprietário?',
+		content = '## Mensagem para o Proprietário do Motel',
 		centered = true,
 		labels = {
-			cancel = 'close',
-			confirm = 'Message',
+			cancel = 'fechar',
+			confirm = 'Mensagem',
 		},
 		cancel = true
 	})
 	if message == 'cancel' then return end
-	local input = lib.inputDialog('Message', {
-		{type = 'input', label = 'Title', description = 'title of your message', icon = 'hash', required = true},
-		{type = 'textarea', label = 'Description', description = 'your message', icon = 'mail', required = true},
-		{type = 'number', label = 'Contact Number', icon = 'phone', required = false},
+	local input = lib.inputDialog('Mensagem', {
+		{type = 'input', label = 'Título', description = 'título da tua mensagem', icon = 'hash', required = true},
+		{type = 'textarea', label = 'Descrição', description = 'a tua mensagem', icon = 'mail', required = true},
+		{type = 'number', label = 'Número de contacto', icon = 'phone', required = false},
 	})
 	
 	config.messageApi({title = input[1], message = input[2], motel = motel})
@@ -421,20 +422,20 @@ Owner.Rooms.Occupants = function(data,index)
 	local options = {}
 	for player,char in pairs(players) do
 		local hour = math.floor((char.duration - time) / 3600)
-		local name = char.name or 'No Name'
-		local duration_left = hour .. ' Hours : '..math.floor(((char.duration - time) / 60) - (60 * hour))..' Minutes'
+		local name = char.name or 'Sem Nome'
+		local duration_left = hour .. ' Horas : '..math.floor(((char.duration - time) / 60) - (60 * hour))..' Minutos'
 		table.insert(options,{
-			title = 'Occupant '..name,
-			description = 'Rent Duration: '..duration_left,
+			title = 'Ocupante '..name,
+			description = 'Duração da Renda: '..duration_left,
 			icon = 'hotel',
 			onSelect = function()
 				local kick = lib.alertDialog({
-					header = 'Confirmation',
-					content = '## Kick Occupant \n  **Name:** '..name,
+					header = 'Confirmação',
+					content = '## Expulsar Ocupante \n  **Nome:** '..name,
 					centered = true,
 					labels = {
-						cancel = 'close',
-						confirm = 'Kick',
+						cancel = 'fechar',
+						confirm = 'Expulsar',
 						waw = 'waw'
 					},
 					cancel = true
@@ -442,9 +443,9 @@ Owner.Rooms.Occupants = function(data,index)
 				if kick == 'cancel' then return end
 				local success = lib.callback.await('renzu_motels:removeoccupant',false,data,index,player)
 				if success then
-					Notify('Successfully kicked '..name..' from room '..index,'success')
+					Notify('Expulsaste o(a) '..name..' do quarto '..index,'success')
 				else
-					Notify('Failed to kicked '..name..' from room '..index,'error')
+					Notify('Falha ao expulsar '..name..' do quarto '..index,'error')
 				end
 			end,
 			arrow = true,
@@ -453,21 +454,21 @@ Owner.Rooms.Occupants = function(data,index)
 	if data.maxoccupants > #options then
 		for i = 1, data.maxoccupants-#options do
 			table.insert(options,{
-				title = 'Vacant Slot ',
+				title = 'Espaço Vago ',
 				icon = 'hotel',
 				onSelect = function()
-					local input = lib.inputDialog('New Occupant', {
-						{type = 'number', label = 'Citizen ID', description = 'ID of the citizen you want to add', icon = 'id-card', required = true},
-						{type = 'number', label = 'Select a Duration in '..data.rental_period..'s', description = 'how many '..data.rental_period..'s', icon = 'clock', default = 1},
+					local input = lib.inputDialog('Novo Ocupante', {
+						{type = 'number', label = 'ID do Cidadão', description = 'ID do cidadão que queres adicionar', icon = 'id-card', required = true},
+						{type = 'number', label = 'Seleciona uma duração em '..data.rental_period..'s', description = 'quantos '..data.rental_period..'s', icon = 'clock', default = 1},
 					})
 					if not input then return end
 					local success = lib.callback.await('renzu_motels:addoccupant',false,data,index,input)
 					if success == 'exist' then
-						Notify('Already exist from room '..index,'error')
+						Notify('Já existe no quarto '..index,'error')
 					elseif success then
-						Notify('Successfully Add '..input[1]..' from room '..index,'success')
+						Notify('Adicionaste '..input[1]..' ao quarto '..index,'success')
 					else
-						Notify('Failed to Add '..input[1]..' from room '..index,'error')
+						Notify('Falha ao adicionar '..input[1]..' ao quarto '..index,'error')
 					end
 				end,
 				arrow = true,
@@ -477,7 +478,7 @@ Owner.Rooms.Occupants = function(data,index)
 	lib.registerContext({
 		menu = 'owner_rooms',
         id = 'occupants_lists',
-        title = 'Room #'..index..' Occupants',
+        title = 'Quarto #'..index..' Ocupantes',
         options = options
     })
 	lib.showContext('occupants_lists')
@@ -489,8 +490,8 @@ Owner.Rooms.List = function(data)
 	for doorindex,v in ipairs(data.doors) do
 		local occupants = CountOccupants(motels[data.motel].rooms[doorindex].players)
 		table.insert(options,{
-			title = 'Room #'..doorindex,
-			description = 'Add or Kick Occupants from room #'..doorindex..' \n ***Occupants:*** '..occupants,
+			title = 'Quarto #'..doorindex,
+			description = 'Adicionar ou Expulsar Ocupantes do quarto #'..doorindex..' \n ***Ocupantes:*** '..occupants,
 			icon = 'hotel',
 			onSelect = function()
 				return Owner.Rooms.Occupants(data,doorindex)
@@ -512,19 +513,19 @@ Owner.Employee.Manage = function(data)
 	local motel = GlobalState.Motels[data.motel]
 	local options = {
 		{
-			title = 'Add Employee',
-			description = 'Add nearby citizen to your motel employees',
+			title = 'Adicionar Funcionário',
+			description = 'Adiciona um cidadão próximo como funcionário do motel',
 			icon = 'hotel',
 			onSelect = function()
-				local input = lib.inputDialog('Add Employee', {
-					{type = 'number', label = 'Citizen ID', description = 'ID of the citizen you want to add', icon = 'id-card', required = true},
+				local input = lib.inputDialog('Adicionar Funcionário', {
+					{type = 'number', label = 'ID do Cidadão', description = 'ID do cidadão que queres adicionar', icon = 'id-card', required = true},
 				})
 				if not input then return end
 				local success = lib.callback.await('renzu_motels:addemployee',false,data.motel,input[1])
 				if success then
-					Notify('Successfully Add to Employee Lists','success')
+					Notify('Adicionado com sucesso à lista de funcionários','success')
 				else
-					Notify('Failed to Add to Employee','error')
+					Notify('Falha ao adicionar funcionário','error')
 				end
 			end,
 			arrow = true,
@@ -534,14 +535,14 @@ Owner.Employee.Manage = function(data)
        for identifier,name in pairs(motel.employees) do
           table.insert(options,{
 			title = name,
-			description = 'remove '..name..' to your Employee Lists',
+			description = 'Remover '..name..' da tua lista de funcionários',
 			icon = 'hotel',
 			onSelect = function()
 				local success = lib.callback.await('renzu_motels:removeemployee',false,data.motel,identifier)
 					if success then
-						Notify('Successfully remove from Employee Lists','success')
+						Notify('Removido com sucesso da lista de funcionários','success')
 					else
-						Notify('Failed to remove from Employee','error')
+						Notify('Falha ao remover funcionário','error')
 					end
 			end,
 			arrow = true,
@@ -550,7 +551,7 @@ Owner.Employee.Manage = function(data)
 	end
 	lib.registerContext({
         id = 'employee_manage',
-        title = 'Employee Manage',
+        title = 'Gestão de Funcionários',
         options = options
     })
 	lib.showContext('employee_manage')
@@ -561,20 +562,20 @@ MotelOwner = function(data)
 	if not motels[data.motel].owned then
 		local buy = lib.alertDialog({
 			header = data.label,
-			content = '![motel](nui://renzu_motels/data/image/'..data.motel..'.png) \n ## INFO \n **Rooms:** '..#data.doors..'  \n  **Maximum Occupants:** '..#data.doors * data.maxoccupants..'  \n  **Price:** $'..data.businessprice,
+			content = '![motel](nui://renzu_motels/data/image/'..data.motel..'.png) \n ## INFORMAÇÃO \n **Quartos:** '..#data.doors..'  \n  **Ocupantes Máximos:** '..#data.doors * data.maxoccupants..'  \n  **Preço:** $'..data.businessprice,
 			centered = true,
 			labels = {
-				cancel = 'close',
-				confirm = 'buy'
+				cancel = 'fechar',
+				confirm = 'Comprar'
 			},
 			cancel = true
 		})
 		if buy ~= 'cancel' then
 			local success = lib.callback.await('renzu_motels:buymotel',false,data)
 			if success then
-				Notify('You Successfully buy the motel','success')
+				Notify('Compraste o motel com sucesso','success')
 			else
-				Notify('Fail to buy the motel','error')
+				Notify('Falha ao comprar o motel','error')
 			end
 		end
 	elseif IsOwnerOrEmployee(data.motel) then
@@ -582,8 +583,8 @@ MotelOwner = function(data)
 		local rate = motels[data.motel].hour_rate or data.rate
 		local options = {
 			{
-				title = 'Motel Rooms',
-				description = 'Add or Kick Occupants',
+				title = 'Quartos do Motel',
+				description = 'Adicionar ou Expulsar Ocupantes',
 				icon = 'hotel',
 				onSelect = function()
 					return Owner.Rooms.List(data)
@@ -591,23 +592,23 @@ MotelOwner = function(data)
 				arrow = true,
 			},
 			{
-				title = 'Send Invoice',
-				description = 'Invoice nearby citizens',
+				title = 'Enviar Fatura',
+				description = 'Faturar cidadãos próximos',
 				icon = 'hotel',
 				onSelect = function()
-					local input = lib.inputDialog('Send Invoice', {
-						{type = 'number', label = 'Citizen ID', description = 'id of nearby citizen', icon = 'money', required = true},
-						{type = 'number', label = 'Amount', description = 'total amount to request', icon = 'money', required = true},
-						{type = 'input', label = 'Describe', description = 'Description of Invoice', icon = 'info'},
-						{type = 'checkbox', label = 'Payment Bank'},
+					local input = lib.inputDialog('Enviar Fatura', {
+						{type = 'number', label = 'ID do Cidadão', description = 'id do cidadão próximo', icon = 'money', required = true},
+						{type = 'number', label = 'Valor', description = 'valor total a cobrar', icon = 'money', required = true},
+						{type = 'input', label = 'Descrição', description = 'Descrição da fatura', icon = 'info'},
+						{type = 'checkbox', label = 'Pagamento Banco'},
 					})
 					if not input then return end
-					Notify('You Successfully Send the Invoice to '..input[1],'success')
+					Notify('Enviaste a fatura para '..input[1]..' com sucesso','success')
 					local success = lib.callback.await('renzu_motels:sendinvoice',false,data.motel,input)
 					if success then
-						Notify('Invoice has been paid','success')
+						Notify('A fatura foi paga','success')
 					else
-						Notify('Invoice is not paid','error')
+						Notify('A fatura não foi paga','error')
 					end
 				end,
 				arrow = true,
@@ -615,44 +616,44 @@ MotelOwner = function(data)
 		}
 		if motels[data.motel].owned == PlayerData.identifier then
 			table.insert(options,{
-				title = 'Adjust Hour Rates',
-				description = 'Modify current '..data.rental_period..' rates. \n '..data.rental_period..' Rates: '..rate,
+				title = 'Ajustar Preços por Hora',
+				description = 'Modificar os preços atuais por '..data.rental_period..'. \n Preço por '..data.rental_period..': '..rate,
 				icon = 'hotel',
 				onSelect = function()
-					local input = lib.inputDialog('Edit '..data.rental_period..' Rate', {
-						{type = 'number', label = 'Rate', description = 'Rate per '..data.rental_period..'', icon = 'money', required = true},
+					local input = lib.inputDialog('Editar Preço por '..data.rental_period, {
+						{type = 'number', label = 'Preço', description = 'Preço por '..data.rental_period..'', icon = 'money', required = true},
 					})
 					if not input then return end
 					local success = lib.callback.await('renzu_motels:editrate',false,data.motel,input[1])
 					if success then
-						Notify('You Successfully Change the '..data.rental_period..' Rate','success')
+						Notify('Alteraste com sucesso o preço por '..data.rental_period,'success')
 					else
-						Notify('Fail to Modify','error')
+						Notify('Falha ao modificar','error')
 					end
 				end,
 				arrow = true,
 			})
 			table.insert(options,{
-				title = 'Motel Revenue',
+				title = 'Receita do Motel',
 				description = 'Total: '..revenue,
 				icon = 'hotel',
 				onSelect = function()
-					local input = lib.inputDialog('Withdraw Funds', {
-						{type = 'number', label = 'Fund Amount', icon = 'money', required = true},
+					local input = lib.inputDialog('Levantar Fundos', {
+						{type = 'number', label = 'Valor a Levantar', icon = 'money', required = true},
 					})
 					if not input then return end
 					local success = lib.callback.await('renzu_motels:withdrawfund',false,data.motel,input[1])
 					if success then
-						Notify('You Successfully Withdraw Funds','success')
+						Notify('Levantaste os fundos com sucesso','success')
 					else
-						Notify('Fail to Withdraw','error')
+						Notify('Falha ao levantar os fundos','error')
 					end
 				end,
 				arrow = true,
 			})
 			table.insert(options,{
-				title = 'Employee Management',
-				description = 'Add / Remove Employee',
+				title = 'Gestão de Funcionários',
+				description = 'Adicionar / Remover Funcionário',
 				icon = 'hotel',
 				onSelect = function()
 					return Owner.Employee.Manage(data)
@@ -660,44 +661,44 @@ MotelOwner = function(data)
 				arrow = true,
 			})
 			table.insert(options,{
-				title = 'Transfer Ownership',
-				description = 'transfer to other nearby citizens',
+				title = 'Transferir Propriedade',
+				description = 'Transferir para outro cidadão próximo',
 				icon = 'hotel',
 				onSelect = function()
-					local input = lib.inputDialog('Transfer Motel', {
-						{type = 'number', label = 'Citizen ID', description = 'ID of the citizen you want to be transfered', icon = 'id-card', required = true},
+					local input = lib.inputDialog('Transferir Motel', {
+						{type = 'number', label = 'ID do Cidadão', description = 'ID do cidadão para quem queres transferir', icon = 'id-card', required = true},
 					})
 					if not input then return end
 					local success = lib.callback.await('renzu_motels:transfermotel',false,data.motel,input[1])
 					if success then
-						Notify('Successfully Transfer Motel Ownership','success')
+						Notify('Transferiste a propriedade do motel com sucesso','success')
 					else
-						Notify('Failed to Transfer','error')
+						Notify('Falha ao transferir','error')
 					end
 				end,
 				arrow = true,
 			})
 			table.insert(options,{
-				title = 'Sell Motel',
-				description = 'Sell motel for half price',
+				title = 'Vender Motel',
+				description = 'Vender o motel por metade do valor',
 				icon = 'hotel',
 				onSelect = function()
 					local sell = lib.alertDialog({
 						header = data.label,
-						content = '![motel](nui://renzu_motels/data/image/'..data.motel..'.png) \n ## INFO \n  **Selling Value:** $'..data.businessprice / 2,
+						content = '![motel](nui://renzu_motels/data/image/'..data.motel..'.png) \n ## INFORMAÇÃO \n  **Valor de Venda:** $'..data.businessprice / 2,
 						centered = true,
 						labels = {
-							cancel = 'close',
-							confirm = 'Sell'
+							cancel = 'fechar',
+							confirm = 'Vender'
 						},
 						cancel = true
 					})
 					if sell ~= 'cancel' then
 						local success = lib.callback.await('renzu_motels:sellmotel',false,data)
 						if success then
-							Notify('You Successfully Sell the motel','success')
+							Notify('Vendeste o motel com sucesso','success')
 						else
-							Notify('Fail to sell the motel','error')
+							Notify('Falha ao vender o motel','error')
 						end
 					end
 				end,
@@ -714,11 +715,11 @@ MotelOwner = function(data)
 	end
 end
 
-MotelRentalPoints = function(data)
+ --[[ MotelRentalPoints = function(data)
     local point = lib.points.new(data.rentcoord, 5, data)
 
     function point:onEnter() 
-		lib.showTextUI('[E] - Motel Rent', {
+		lib.showTextUI('[E] - Aluguer de Motel', {
 			position = "top-center",
 			icon = 'hotel',
 			style = {
@@ -734,13 +735,39 @@ MotelRentalPoints = function(data)
 	end
 
     function point:nearby()
-        DrawMarker(2, self.coords.x, self.coords.y, self.coords.z, 0.0, 0.0,0.0, 0.0, 180.0, 0.0, 0.7, 0.7, 0.7, 225, 225, 211, 50, false,true, 2, nil, nil, false)
+        -- DrawMarker(...)
         if self.currentDistance < 1 and IsControlJustReleased(0, 38) then
             MotelRentalMenu(data)
         end
     end
 	return point
+end ]]
+ 
+local function CreateMotelRentalTarget(data)
+    local targetId = exports.ox_target:addBoxZone({
+        coords = data.rentcoord, 
+        size = vec3(2.0, 2.0, 2.0),
+        rotation = 0,
+        debug = false,
+        options = {
+            {
+                name = 'motel_rental_' .. data.motel,
+                icon = 'fas fa-hotel',
+                label = 'Aluguer de Motel - ' .. data.label,
+                onSelect = function()
+                    MotelRentalMenu(data)
+                end,
+                canInteract = function(entity, distance, coords, name)
+                    return distance < 3.0
+                end
+            }
+        }
+    })
+    
+    return targetId
 end
+
+
 
 local inMotelZone = false
 MotelZone = function(data)
@@ -749,40 +776,22 @@ MotelZone = function(data)
 		inMotelZone = true
 		Citizen.CreateThreadNow(function()
 			for index, doors in pairs(data.doors) do
-				for type, door in pairs(doors) do
-					if type == 'door' then
-						for doorindex,v in pairs(door) do
-							MotelFunction({
-								payment = data.payment or 'money',
-								uniquestash = data.uniquestash, 
-								shell = data.shell, 
-								Mlo = data.Mlo, 
-								type = type, 
-								index = index,
-								doorindex = index + doorindex,
-								coord = v.coord, 
-								label = config.Text[type], 
-								motel = data.motel, 
-								door = v.model
-							})
-						end
-					else
-						MotelFunction({
-							payment = data.payment or 'money',
-							uniquestash = data.uniquestash, 
-							shell = data.shell, 
-							Mlo = data.Mlo, 
-							type = type, 
-							index = index, 
-							coord = door, 
-							label = config.Text[type], 
-							motel = data.motel, 
-							door = data.door
-						})
-					end
+				for type, coord in pairs(doors) do
+					MotelFunction({
+						payment = data.payment or 'money',
+						uniquestash = data.uniquestash, 
+						shell = data.shell, 
+						Mlo = data.Mlo, 
+						type = type, 
+						index = index, 
+						coord = coord, 
+						label = config.Text[type], 
+						motel = data.motel, 
+						door = data.door
+					})
 				end
 			end
-			point = MotelRentalPoints(data) 
+			point = CreateMotelRentalTarget(data) 
 		end)
 	end
 
@@ -837,12 +846,12 @@ end
 EnterShell = function(data,login)
 	local motels = GlobalState.Motels
 	if motels[data.motel].rooms[data.index].lock and not login then
-		Notify('Door is Locked', 'error')
+		Notify('A porta está trancada', 'error')
 		return false
 	end
 	local shelldata = config.shells[data.shell or data.motel]
 	if not shelldata then 
-		warn('Shell is not configure')
+		warn('Shell não está configurada')
 		return 
 	end
 	lib.callback.await('renzu_motels:SetRouting',false,data,'enter')
@@ -933,26 +942,21 @@ lib.onCache('weapon', function(weapon)
 			local _, bullet, _ = RayCastGamePlayCamera(200.0,1)
 			for k,data in pairs(config.motels) do
 				for k,v in pairs(data.doors) do
-					if v.door then
-						for k2,v in pairs(v.door) do
-							if #(vec3(bullet.x,bullet.y,bullet.z) - vec3(v.coord.x,v.coord.y,v.coord.z)) < 2 and motels[data.motel].rooms[k].lock then
-								TriggerServerEvent('renzu_motels:Door', {
-									motel = data.motel,
-									index = k,
-									doorindex = k + k2,
-									coord = v.coord,
-									Mlo = data.Mlo,
-								})
-								local text
-								if data.Mlo then
-									local doorindex = (k + k2) + (joaat(data.motel))
-									text = DoorSystemGetDoorState(doorindex) == 0 and 'You Destroy the Motel Door'
-								else
-									text = 'You Destroy the Motel Door'
-								end
-								Notify(text,'warning')
-							end
+					if #(vec3(bullet.x,bullet.y,bullet.z) - vec3(v.door.x,v.door.y,v.door.z)) < 2 and motels[data.motel].rooms[k].lock then
+						TriggerServerEvent('renzu_motels:Door', {
+							motel = data.motel,
+							index = k,
+							coord = v.door,
+							Mlo = data.Mlo,
+						})
+						local text
+						if data.Mlo then
+							local doorindex = k + (joaat(data.motel))
+							text = DoorSystemGetDoorState(doorindex) == 0 and 'Destruíste a porta do motel'
+						else
+							text = 'Destruíste a porta do motel'
 						end
+						Notify(text,'warning')
 					end
 				end
 				Wait(1000)

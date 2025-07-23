@@ -1,7 +1,8 @@
 if GetResourceState('ox_inventory') ~= 'started' then return end
 
 AddItem = function(src, item, count, metadata)
-	return exports.ox_inventory:AddItem(src, item, count, metadata)
+	local success = exports.ox_inventory:AddItem(src, item, count, metadata)
+	return success
 end
 
 RemoveItem = function(src, item, count, metadata)

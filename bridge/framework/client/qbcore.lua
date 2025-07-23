@@ -37,13 +37,28 @@ RegisterNetEvent('QBCore:Client:OnJobUpdate', function(job)
 end)
 
 GetInventoryItems = function(name)
-	local data = {}
-	local PlayerData = QBCORE.Functions.GetPlayerData()
-	for _, item in pairs(PlayerData.items) do
-		if name == item.name then
-			item.metadata = item.info
-			table.insert(data,item)
-		end
-	end
-	return data
+    if GetResourceState('ox_inventory') == 'started' then
+        local items = exports.ox_inventory:Search('slots', name)
+        local data = {}
+        
+        for slot, item in pairs(items) do
+            if item.name == name then
+                table.insert(data, item)
+            end
+        end
+        
+        if #data > 0 then
+            return data
+        end
+    end
+    
+    local data = {}
+    local PlayerData = QBCORE.Functions.GetPlayerData()
+    for _, item in pairs(PlayerData.items) do
+        if name == item.name then
+            item.metadata = item.info
+            table.insert(data, item)
+        end
+    end
+    return data
 end

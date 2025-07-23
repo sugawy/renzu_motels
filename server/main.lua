@@ -31,8 +31,8 @@ Citizen.CreateThreadNow(function()
 			if motels[v.motel].rooms[doorindex].players and GetResourceState('ox_inventory') == 'started' then
 				for id,_ in pairs(motels[v.motel].rooms[doorindex].players) do
 					local stashid = v.uniquestash and id or 'room'
-					exports.ox_inventory:RegisterStash('stash_'..v.motel..'_'..stashid..'_'..doorindex, 'Storage', 70, 70000, false)
-					exports.ox_inventory:RegisterStash('fridge_'..v.motel..'_'..stashid..'_'..doorindex, 'Fridge', 70, 70000, false)
+					exports.ox_inventory:RegisterStash('stash_'..v.motel..'_'..stashid..'_'..doorindex, 'Storage', 70, 120000, false)
+					exports.ox_inventory:RegisterStash('fridge_'..v.motel..'_'..stashid..'_'..doorindex, 'Fridge', 70, 50000, false)
 				end
 				CreateInventoryHooks(v.motel,'stash')
 				CreateInventoryHooks(v.motel,'fridge')
@@ -85,8 +85,8 @@ lib.callback.register('renzu_motels:rentaroom', function(src,data)
 		db.updateall('rooms = ?, revenue = ?', '`motel`', data.motel, json.encode(motels[data.motel].rooms),motels[data.motel].revenue)
 		if GetResourceState('ox_inventory') == 'started' then
 			local stashid = data.uniquestash and identifier or 'room'
-			exports.ox_inventory:RegisterStash('stash_'..data.motel..'_'..stashid..'_'..data.index, 'Storage', 70, 70000, false)
-			exports.ox_inventory:RegisterStash('fridge_'..data.motel..'_'..stashid..'_'..data.index, 'Fridge', 70, 70000, false)
+			exports.ox_inventory:RegisterStash('stash_'..data.motel..'_'..stashid..'_'..data.index, 'Storage', 70, 120000, false)
+			exports.ox_inventory:RegisterStash('fridge_'..data.motel..'_'..stashid..'_'..data.index, 'Fridge', 70, 50000, false)
 		end
 		return true
 	end
@@ -124,11 +124,12 @@ lib.callback.register('renzu_motels:motelkey', function(src,data)
 	local metadata = {
 		type = data.motel,
 		serial = data.index,
-		label = 'Motel Key',
-		description = 'personal motel key for '..data.motel..' door #'..data.index..' \n Motel Room Owner: '..xPlayer.name,
+		label = 'Chave do Motel',
+		description = 'Chave para o Motel '..data.motel..' Quarto #'..data.index..' \n Dono do Quarto do Motel: '..xPlayer.name,
 		owner = xPlayer.identifier
 	}
-	return AddItem(src, 'keys', 1, metadata)
+	local success = AddItem(src, 'keys', 1, metadata)
+	return success
 end)
 
 lib.callback.register('renzu_motels:buymotel', function(src,data)
@@ -170,8 +171,8 @@ lib.callback.register('renzu_motels:addoccupant', function(src,data,index,player
 		db.updateall('rooms = ?', '`motel`', data.motel, json.encode(motels[data.motel].rooms))
 		if GetResourceState('ox_inventory') == 'started' then
 			local stashid = data.uniquestash and toPlayer.identifier or 'room'
-			exports.ox_inventory:RegisterStash('stash_'..data.motel..'_'..stashid..'_'..index, 'Storage', 70, 70000, false)
-			exports.ox_inventory:RegisterStash('fridge_'..data.motel..'_'..stashid..'_'..index, 'Fridge', 70, 70000, false)
+			exports.ox_inventory:RegisterStash('stash_'..data.motel..'_'..stashid..'_'..index, 'Storage', 70, 120000, false)
+			exports.ox_inventory:RegisterStash('fridge_'..data.motel..'_'..stashid..'_'..index, 'Fridge', 70, 50000, false)
 		end
 		return true
 	end

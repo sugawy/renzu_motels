@@ -4,7 +4,7 @@ MotelFunction = function(data)
 	if not data.Mlo and data.type ~= 'door' then return end
 	local options = {}
 	if data.type == 'door' then
-		local doorIndex = data.doorindex + (joaat(data.motel))
+		local doorIndex = data.index + (joaat(data.motel))
 		AddDoorToSystem(doorIndex, data.door, data.coord)
 		SetDoorState(data)
 		local blip = AddBlipForCoord(data.coord.x,data.coord.y,data.coord.z)
@@ -47,7 +47,7 @@ MotelFunction = function(data)
 	})
     local targetid = exports.ox_target:addBoxZone({
 		coords = data.coord,
-		size = vec3(2, 2, 2),
+		size = vec3(1, 1, 1),
 		rotation = 45,
 		debug = false,
 		options = options
@@ -103,7 +103,7 @@ ShellTargets = function(data,offsets,loc,house)
 
 		local targetid = exports.ox_target:addBoxZone({
 			coords = loc+v,
-			size = vec3(2, 2, 2),
+			size = vec3(1, 1, 1),
 			rotation = 45,
 			debug = false,
 			options = options

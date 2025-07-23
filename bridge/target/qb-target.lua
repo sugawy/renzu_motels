@@ -48,7 +48,7 @@ MotelFunction = function(data)
 	})
 	local target = {
 		coords = data.coord,
-		size = vec3(2, 2, 2),
+		size = vec3(1, 1, 1),
 		rotation = 45,
 		debug = drawZones,
 		options = options
