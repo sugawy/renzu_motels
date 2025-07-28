@@ -8,7 +8,7 @@ CreateBlips = function()
 		SetBlipAsShortRange(blip,true)
 		SetBlipScale(blip,0.6)
 		BeginTextCommandSetBlipName("STRING")
-		AddTextComponentString(v.label) 
+		AddTextComponentString(v.label) -- assume labels em PT já definidos no config
 		EndTextCommandSetBlipName(blip)
 	end
 end
@@ -745,7 +745,7 @@ end ]]
  
 local function CreateMotelRentalTarget(data)
     local targetId = exports.ox_target:addBoxZone({
-        coords = data.rentcoord, 
+        coords = data.rentcoord, -- ponto de aluguer
         size = vec3(2.0, 2.0, 2.0),
         rotation = 0,
         debug = false,
@@ -769,7 +769,7 @@ end
 
 
 
-local inMotelZone = false
+--[[ local inMotelZone = false
 MotelZone = function(data)
 	local point = nil
     function onEnter(self) 
@@ -785,7 +785,7 @@ MotelZone = function(data)
 						type = type, 
 						index = index, 
 						coord = coord, 
-						label = config.Text[type], 
+						label = config.Text[type], -- traduz no config
 						motel = data.motel, 
 						door = data.door
 					})
@@ -798,6 +798,61 @@ MotelZone = function(data)
     function onExit(self)
 		inMotelZone = false
 		point:remove()
+		for k,id in pairs(zones) do
+			removeTargetZone(id)
+		end
+		for k,id in pairs(blips) do
+			if DoesBlipExist(id) then
+				RemoveBlip(id)
+			end
+		end
+		zones = {}
+	end
+
+    local sphere = lib.zones.sphere({
+        coords = data.coord,
+        radius = data.radius,
+        debug = false,
+        inside = inside,
+        onEnter = onEnter,
+        onExit = onExit
+    })
+end
+ ]]
+
+ local inMotelZone = false
+MotelZone = function(data)
+	local point = nil
+    function onEnter(self) 
+		inMotelZone = true
+		Citizen.CreateThreadNow(function()
+			for index, doors in pairs(data.doors) do
+				for type, coord in pairs(doors) do
+					MotelFunction({
+						payment = data.payment or 'money',
+						uniquestash = data.uniquestash, 
+						shell = data.shell, 
+						Mlo = data.Mlo, 
+						type = type, 
+						index = index, 
+						coord = coord, 
+						label = config.Text[type], -- traduz no config
+						motel = data.motel, 
+						door = data.door
+					})
+				end
+			end
+			point = CreateMotelRentalTarget(data) 
+		end)
+	end
+
+    function onExit(self)
+		inMotelZone = false
+		-- Fix: Use proper ox_target removal method
+		if point then
+			exports.ox_target:removeZone(point)
+			point = nil
+		end
 		for k,id in pairs(zones) do
 			removeTargetZone(id)
 		end
