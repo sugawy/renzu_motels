@@ -1,3 +1,6 @@
+# this was edited to make it work with qbox and ox_target without issues
+
+
 # renzu_motels
 Fivem - Motel Management. Hourly Rental System. Supports MLO and Shells. ESX/QBCORE
 
