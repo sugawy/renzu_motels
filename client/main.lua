@@ -890,6 +890,11 @@ function Teleport(x, y, z, h ,exit)
 		for k,id in pairs(shelzones) do
 			removeTargetZone(id)
 		end
+
+		if registeredShells then
+			registeredShells[house] = nil
+		end
+
 		DeleteEntity(house)
 		lib.callback.await('renzu_motels:SetRouting',false,data,'exit')
 		shelzones = {}
@@ -945,7 +950,7 @@ EnterShell = function(data,login)
 			SetWeatherTypePersist('CLEAR')
 			SetWeatherTypeNow('CLEAR')
 			SetWeatherTypeNowPersist('CLEAR')
-			NetworkOverrideClockTime(18, 0, 0)
+			NetworkOverrideClockTime(23, 0, 0)
 			Wait(1)
 		end
 	end)

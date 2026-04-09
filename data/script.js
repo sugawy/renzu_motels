@@ -19,11 +19,11 @@ window.addEventListener('message', function(event) {
         playsound(event.data.content)
     }
     if (event.data.type == 'door') {
-        document.getElementById('door').innerHTML = `
+/*         document.getElementById('door').innerHTML = `
             <video autoplay id="myVideo">
                 <source src="audio/door.mp4" type="video/mp4">
             </video>
-        `
+        ` */
         setTimeout(function() {
             document.getElementById('door').innerHTML = ''
         }, 7000)

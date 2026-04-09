@@ -37,6 +37,7 @@ RegisterNetEvent('QBCore:Client:OnJobUpdate', function(job)
 end)
 
 GetInventoryItems = function(name)
+    -- First try ox_inventory directly
     if GetResourceState('ox_inventory') == 'started' then
         local items = exports.ox_inventory:Search('slots', name)
         local data = {}
@@ -52,6 +53,7 @@ GetInventoryItems = function(name)
         end
     end
     
+    -- Fallback to QBCore method
     local data = {}
     local PlayerData = QBCORE.Functions.GetPlayerData()
     for _, item in pairs(PlayerData.items) do

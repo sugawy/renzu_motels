@@ -171,8 +171,8 @@ lib.callback.register('renzu_motels:addoccupant', function(src,data,index,player
 		db.updateall('rooms = ?', '`motel`', data.motel, json.encode(motels[data.motel].rooms))
 		if GetResourceState('ox_inventory') == 'started' then
 			local stashid = data.uniquestash and toPlayer.identifier or 'room'
-			exports.ox_inventory:RegisterStash('stash_'..data.motel..'_'..stashid..'_'..index, 'Storage', 70, 120000, false)
-			exports.ox_inventory:RegisterStash('fridge_'..data.motel..'_'..stashid..'_'..index, 'Fridge', 70, 50000, false)
+			exports.ox_inventory:RegisterStash('stash_'..data.motel..'_'..stashid..'_'..index, 'Baú', 70, 120000, false)
+			exports.ox_inventory:RegisterStash('fridge_'..data.motel..'_'..stashid..'_'..index, 'Frigorifico', 70, 50000, false)
 		end
 		return true
 	end
@@ -305,9 +305,11 @@ lib.callback.register('renzu_motels:SetRouting', function(src,data,Type)
 	local xPlayer = GetPlayerFromId(src)
 	if Type == 'enter' then
 		routings[src] = GetPlayerRoutingBucket(src)
-		SetPlayerRoutingBucket(src,data.index+100)
+		local bucket = 10000 + (joaat(data.motel) % 50000) + data.index
+		SetPlayerRoutingBucket(src,bucket)
 	else
-		SetPlayerRoutingBucket(src,routings[src])
+		SetPlayerRoutingBucket(src,routings[src] or 0)
+		routings[src]= nil
 	end
 	return true
 end)

@@ -14,7 +14,7 @@ MotelFunction = function(data)
 		SetBlipAsShortRange(blip,true)
 		SetBlipScale(blip,0.3)
 		BeginTextCommandSetBlipName("STRING")
-		AddTextComponentString('Door '..data.index)
+		AddTextComponentString('Porta '..data.index)
 		EndTextCommandSetBlipName(blip)
 		table.insert(blips,blip)
 		table.insert(options,{
@@ -24,7 +24,7 @@ MotelFunction = function(data)
 				return LockPick(data)
 			end,
 			icon = 'fas fa-unlink',
-			label = 'Lock Pick'
+			label = 'Gazuada'
 		})
 		if not data.Mlo then
 			table.insert(options,{
@@ -33,7 +33,7 @@ MotelFunction = function(data)
 					return EnterShell(data)
 				end,
 				icon = 'fas fa-person-booth',
-				label = 'Enter'
+				label = 'Entrar'
 			})
 		end
 	end
@@ -59,7 +59,12 @@ removeTargetZone = function(id)
 	return exports['ox_target']:removeZone(id)
 end
 
+local registeredShells = {}
+
 ShellTargets = function(data,offsets,loc,house)
+	if registeredShells[house] then return end
+	registeredShells[house] = true
+
 	Wait(2000)
 	for k,v in pairs(offsets) do
 		local options = {}
@@ -80,7 +85,7 @@ ShellTargets = function(data,offsets,loc,house)
 					return Door(data)
 				end,
 				icon = config.icons[k],
-				label = 'Toggle Door'
+				label = 'Porta'
 			})
 		end
 

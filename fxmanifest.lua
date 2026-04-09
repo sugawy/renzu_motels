@@ -4,6 +4,7 @@ game 'gta5'
 shared_scripts {
     '@ox_lib/init.lua',
 	'config.lua',
+	 
 }
 ui_page {
     'data/index.html',
